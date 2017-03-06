@@ -3,14 +3,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <minix/ds.h>
-#include "hello.h"
+#include "homework.h"
 
 /*
- * Function prototypes for the hello driver.
+ * Function prototypes for the homework driver.
  */
-static int hello_open(devminor_t minor, int access, endpoint_t user_endpt);
-static int hello_close(devminor_t minor);
-static ssize_t hello_read(devminor_t minor, u64_t position, endpoint_t endpt,
+static int homework_open(devminor_t minor, int access, endpoint_t user_endpt);
+static int homework_close(devminor_t minor);
+static ssize_t homework_read(devminor_t minor, u64_t position, endpoint_t endpt,
     cp_grant_id_t grant, size_t size, int flags, cdev_id_t id);
 
 /* SEF functions and variables. */
@@ -19,12 +19,12 @@ static int sef_cb_init(int type, sef_init_info_t *info);
 static int sef_cb_lu_state_save(int);
 static int lu_state_restore(void);
 
-/* Entry points to the hello driver. */
-static struct chardriver hello_tab =
+/* Entry points to the homework driver. */
+static struct chardriver homework_tab =
 {
-    .cdr_open	= hello_open,
-    .cdr_close	= hello_close,
-    .cdr_read	= hello_read,
+    .cdr_open	= homework_open,
+    .cdr_close	= homework_close,
+    .cdr_read	= homework_read,
 };
 
 /** State variable to count the number of times the device has been opened.
@@ -32,29 +32,29 @@ static struct chardriver hello_tab =
  */
 static int open_counter;
 
-static int hello_open(devminor_t UNUSED(minor), int UNUSED(access),
+static int homework_open(devminor_t UNUSED(minor), int UNUSED(access),
     endpoint_t UNUSED(user_endpt))
 {
-    printf("hello_open(). Called %d time(s).\n", ++open_counter);
+    printf("homework_open(). Called %d time(s).\n", ++open_counter);
     return OK;
 }
 
-static int hello_close(devminor_t UNUSED(minor))
+static int homework_close(devminor_t UNUSED(minor))
 {
-    printf("hello_close()\n");
+    printf("homework_close()\n");
     return OK;
 }
 
-static ssize_t hello_read(devminor_t UNUSED(minor), u64_t position,
+static ssize_t homework_read(devminor_t UNUSED(minor), u64_t position,
     endpoint_t endpt, cp_grant_id_t grant, size_t size, int UNUSED(flags),
     cdev_id_t UNUSED(id))
 {
     u64_t dev_size;
     char *ptr;
     int ret;
-    char *buf = HELLO_MESSAGE;
+    char *buf = HOMEWORK_MESSAGE;
 
-    printf("hello_read()\n");
+    printf("homework_read()\n");
 
     /* This is the total size of our device. */
     dev_size = (u64_t) strlen(buf);
@@ -116,13 +116,13 @@ static void sef_local_startup()
 
 static int sef_cb_init(int type, sef_init_info_t *UNUSED(info))
 {
-/* Initialize the hello driver. */
+/* Initialize the homework driver. */
     int do_announce_driver = TRUE;
 
     open_counter = 0;
     switch(type) {
         case SEF_INIT_FRESH:
-            printf("%s", HELLO_MESSAGE);
+            printf("%s", HOMEWORK_MESSAGE);
         break;
 
         case SEF_INIT_LU:
@@ -130,11 +130,11 @@ static int sef_cb_init(int type, sef_init_info_t *UNUSED(info))
             lu_state_restore();
             do_announce_driver = FALSE;
 
-            printf("%sHey, I'm a new version!\n", HELLO_MESSAGE);
+            printf("%sHey, I'm a new version!\n", HOMEWORK_MESSAGE);
         break;
 
         case SEF_INIT_RESTART:
-            printf("%sHey, I've just been restarted!\n", HELLO_MESSAGE);
+            printf("%sHey, I've just been restarted!\n", HOMEWORK_MESSAGE);
         break;
     }
 
@@ -157,7 +157,7 @@ int main(void)
     /*
      * Run the main loop.
      */
-    chardriver_task(&hello_tab);
+    chardriver_task(&homework_tab);
     return OK;
 }
 
