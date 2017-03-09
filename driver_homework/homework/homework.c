@@ -12,6 +12,9 @@ static int homework_open(devminor_t minor, int access, endpoint_t user_endpt);
 static int homework_close(devminor_t minor);
 static ssize_t homework_read(devminor_t minor, u64_t position, endpoint_t endpt,
     cp_grant_id_t grant, size_t size, int flags, cdev_id_t id);
+static ssize_t homework_write(devminor_t minor, u64_t position, endpoint_t endpt,
+	cp_grant_id_t grant, size_t size, int UNUSED(flags),
+	cdev_id_t UNUSED(id));
 
 /* SEF functions and variables. */
 static void sef_local_startup(void);
@@ -19,12 +22,16 @@ static int sef_cb_init(int type, sef_init_info_t *info);
 static int sef_cb_lu_state_save(int);
 static int lu_state_restore(void);
 
+static int slots[4] = { 0 };
+static int slot_in_use = 0;
+
 /* Entry points to the homework driver. */
 static struct chardriver homework_tab =
 {
     .cdr_open	= homework_open,
     .cdr_close	= homework_close,
     .cdr_read	= homework_read,
+    .cdr_write	= homework_write,
 };
 
 /** State variable to count the number of times the device has been opened.
@@ -36,6 +43,8 @@ static int homework_open(devminor_t UNUSED(minor), int UNUSED(access),
     endpoint_t UNUSED(user_endpt))
 {
     printf("homework_open(). Called %d time(s).\n", ++open_counter);
+    //TODO: Initialize varaibles here? Depends on when/how often open() is called
+    //      For instance, init slot_in_use unless it would overwrite ioctl() 
     return OK;
 }
 
@@ -45,32 +54,47 @@ static int homework_close(devminor_t UNUSED(minor))
     return OK;
 }
 
-static ssize_t homework_read(devminor_t UNUSED(minor), u64_t position,
+static ssize_t homework_read(devminor_t UNUSED(minor), u64_t UNUSED(position),
     endpoint_t endpt, cp_grant_id_t grant, size_t size, int UNUSED(flags),
     cdev_id_t UNUSED(id))
 {
-    u64_t dev_size;
-    char *ptr;
-    int ret;
-    char *buf = HOMEWORK_MESSAGE;
-
     printf("homework_read()\n");
 
-    /* This is the total size of our device. */
-    dev_size = (u64_t) strlen(buf);
-
-    /* Check for EOF, and possibly limit the read size. */
-    if (position >= dev_size) return 0;		/* EOF */
-    if (position + size > dev_size)
-        size = (size_t)(dev_size - position);	/* limit size */
+    int *ptr = slots + slot_in_use;
+    int ret;
+    const int integer_size = 4;
+    //char *buf = HOMEWORK_MESSAGE;
+    if (size < 4)
+    { 
+            printf("homework_read(): Read MUST be 4 bytes\n");
+            return EINVAL;
+    }
 
     /* Copy the requested part to the caller. */
-    ptr = buf + (size_t)position;
-    if ((ret = sys_safecopyto(endpt, grant, 0, (vir_bytes) ptr, size)) != OK)
-        return ret;
+    ret = sys_safecopyto(endpt, grant, 0, (vir_bytes) ptr, integer_size);
+    return (ret != OK) ? ret : integer_size;
+}
 
-    /* Return the number of bytes read. */
-    return size;
+static ssize_t homework_write(devminor_t UNUSED(minor), u64_t UNUSED(position), 
+                endpoint_t endpt, cp_grant_id_t grant, size_t size,
+	            int UNUSED(flags), cdev_id_t UNUSED(id))
+	{
+    printf("homework_write()\n");
+
+    int ret;
+    int *ptr = slots + slot_in_use;
+    const int integer_size = 4;
+
+    //char *buf = HOMEWORK_MESSAGE;
+    if (size < 4)
+    { 
+            printf("homework_write(): Write MUST be 4 bytes\n");
+            return EINVAL;
+    }
+
+    /* Copy the requested part from the caller to the device */
+    ret = sys_safecopyfrom(endpt, grant, 0, (vir_bytes) ptr, size);
+    return (ret != OK) ? ret : integer_size;
 }
 
 static int sef_cb_lu_state_save(int UNUSED(state)) {
