@@ -127,10 +127,13 @@ static ssize_t homework_write(devminor_t minor, u64_t position, endpoint_t endpt
 static int homework_ioctl(devminor_t minor, unsigned long request, endpoint_t endpt,
 	cp_grant_id_t grant, int flags, endpoint_t user_endpt, cdev_id_t id)
 {
+    printf("flags = %d", flags);
+    printf("flags = %d", flags);
 
 	switch (request) {
 		case HIOCSLOT:
                 printf("homework_ioctl() HIOCSLOT\n");
+                printf("Setting slot to %d", k
                 return EXIT_SUCCESS;
 		case HIOCCLEARSLOT:
                 printf("homework_ioctl() HIOCCLEARSLOT\n");
