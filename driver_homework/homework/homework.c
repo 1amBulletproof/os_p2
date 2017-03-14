@@ -42,11 +42,13 @@ static int open_counter;
 /** State variable to store an integer written to this pseudo-driver
  * Note that this is an array of 4 integers and is initialized to 0
  */
-static int slots[4] = { 0 };
+static u32_t slots[4] = { 0 };
 /** State variable to store which integer slot is currently available for reading
  * Note that this integer is initialized to 0
  */
-static int slot_in_use = 0;
+static u32_t slot_in_use = 0;
+// State variable to store size of reads and writes
+const static size_t integer_size = sizeof(slot_in_use);
 
 /*===========================================================================*
  *    homework_open                                                     *
@@ -79,9 +81,8 @@ static ssize_t homework_read(devminor_t UNUSED(minor), u64_t UNUSED(position),
 {
     printf("homework_read()\n");
 
-    int *ptr = slots + slot_in_use;
+    u32_t *ptr = slots + slot_in_use;
     int ret;
-    const int integer_size = 4;
     //char *buf = HOMEWORK_MESSAGE;
     if (size < 4)
     { 
@@ -105,8 +106,7 @@ static ssize_t homework_write(devminor_t minor, u64_t position, endpoint_t endpt
     printf("homework_write()\n");
 
     int ret;
-    int *ptr = slots + slot_in_use;
-    const int integer_size = 4;
+    u32_t *ptr = slots + slot_in_use;
 
     //char *buf = HOMEWORK_MESSAGE;
     if (size < 4)
@@ -116,7 +116,7 @@ static ssize_t homework_write(devminor_t minor, u64_t position, endpoint_t endpt
     }
 
     /* Copy the requested part from the caller to the device */
-    ret = sys_safecopyfrom(endpt, grant, 0, (vir_bytes) ptr, size);
+    ret = sys_safecopyfrom(endpt, grant, 0, (vir_bytes) ptr, integer_size);
     return (ret != OK) ? ret : integer_size;
 }
 
@@ -127,32 +127,53 @@ static ssize_t homework_write(devminor_t minor, u64_t position, endpoint_t endpt
 static int homework_ioctl(devminor_t minor, unsigned long request, endpoint_t endpt,
 	cp_grant_id_t grant, int flags, endpoint_t user_endpt, cdev_id_t id)
 {
-    printf("flags = %d", flags);
-    printf("flags = %d", flags);
+        u32_t tmp_slot;
+        switch (request) {
+                case HIOCSLOT:
+                        printf("homework_ioctl() HIOCSLOT\n");
+                        /* Set input to slot value */
+                        sys_safecopyfrom(endpt, grant, 0, (vir_bytes) &tmp_slot, integer_size);
+                        if (tmp_slot > 3)
+                        {
+                                printf("homework_HIOCSLOT(): Slot must be 0-3\n");
+                                return EINVAL;
+                        }
+                        slot_in_use = tmp_slot;
+                        printf("slot in use = %d\n", slot_in_use);
+                        return EXIT_SUCCESS;
+                case HIOCCLEARSLOT:
+                        printf("homework_ioctl() HIOCCLEARSLOT\n");
+                        /* Clear input slot (set to 0) */
+                        sys_safecopyfrom(endpt, grant, 0, (vir_bytes) &tmp_slot, integer_size);
+                        if (tmp_slot > 3)
+                        {
+                                printf("homework_HIOCSLOT(): Slot must be 0-3\n");
+                                return EINVAL;
+                        }
+                        slots[tmp_slot] = 0;
+                        printf("slot cleared(%d) value = %d\n", tmp_slot, slots[tmp_slot]);
+                        return EXIT_SUCCESS;
+                case HIOCGETSLOT:
+                        tmp_slot = slot_in_use;
+                        printf("homework_ioctl() HIOCGETSLOT\n");
+                        /* Return the current slot_in_use */
+                        sys_safecopyto(endpt, grant, 0, (vir_bytes) &tmp_slot, integer_size);
+                        //r = sys_safecopyto(endpt, grant, 0, (vir_bytes) &tp->tty_termios,
+                                        //sizeof(struct termios));
+                        printf("slot returned: = %d\n", tmp_slot);
+                        return EXIT_SUCCESS;
+                default:
+                        break;
+        }
 
-	switch (request) {
-		case HIOCSLOT:
-                printf("homework_ioctl() HIOCSLOT\n");
-                printf("Setting slot to %d", k
-                return EXIT_SUCCESS;
-		case HIOCCLEARSLOT:
-                printf("homework_ioctl() HIOCCLEARSLOT\n");
-                return EXIT_SUCCESS;
-		case HIOCGETSLOT:
-                printf("homework_ioctl() HIOCGETSLOT\n");
-                return EXIT_SUCCESS;
-		default:
-			break;
-	}
-
-	return ENOTTY;
+        return ENOTTY;
 }
 
 static int sef_cb_lu_state_save(int UNUSED(state)) {
-/* Save the state. */
-    ds_publish_u32("open_counter", open_counter, DSF_OVERWRITE);
+        /* Save the state. */
+        ds_publish_u32("open_counter", open_counter, DSF_OVERWRITE);
 
-    return OK;
+        return OK;
 }
 
 static int lu_state_restore() {
