@@ -23,7 +23,7 @@ main (int argc, char *argv[])
 		perror ("read");
 		exit (1);
 	}
-	printf ("%d\n", foo);
+	printf ("I read %d\n", foo);
 	close (fd);
 	exit (0);
 }

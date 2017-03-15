@@ -154,12 +154,9 @@ static int homework_ioctl(devminor_t minor, unsigned long request, endpoint_t en
                         printf("slot cleared(%d) value = %d\n", tmp_slot, slots[tmp_slot]);
                         return EXIT_SUCCESS;
                 case HIOCGETSLOT:
-                        tmp_slot = slot_in_use;
                         printf("homework_ioctl() HIOCGETSLOT\n");
                         /* Return the current slot_in_use */
-                        sys_safecopyto(endpt, grant, 0, (vir_bytes) &tmp_slot, integer_size);
-                        //r = sys_safecopyto(endpt, grant, 0, (vir_bytes) &tp->tty_termios,
-                                        //sizeof(struct termios));
+                        sys_safecopyto(endpt, grant, 0, (vir_bytes) &slot_in_use, integer_size);
                         printf("slot returned: = %d\n", tmp_slot);
                         return EXIT_SUCCESS;
                 default:

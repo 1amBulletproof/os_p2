@@ -24,7 +24,7 @@ main (int argc, char *argv[])
 	{
 		foo = atoi (argv[1]);
 	}
-	printf ("foo is %d\n", foo);
+	printf ("I will write %d\n", foo);
 
 	if (write (fd, &foo, sizeof (foo)) < 0)
 	{
