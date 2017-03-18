@@ -12,6 +12,7 @@ Operating Systems 605.412 Project 2: Minix3 Pseudo-Device Driver
 ## About the code
 1. **IDE:** VIM ftw
 1. **Important code:** 
+ 1. Proj dir: /root/os/os_p2/
  1. driver_homework/homework/homework.c
 1. **How-to run:**
  1. Use executables in driver_test/
