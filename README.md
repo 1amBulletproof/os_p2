@@ -20,5 +20,5 @@ Operating Systems 605.412 Project 2: Minix3 Pseudo-Device Driver
 1. **Input:** N/A
 1. **Output:** printf statements
 1. **Unit tests:** N/A
-1. Program was created in personal VirtualBox Minix v3.3 VM, see [the github repo for a copy](https://github.com/1amBulletproof/OS_P1)
+1. Program was created in personal VirtualBox Minix v3.3 VM, see [the github repo for a copy](https://github.com/1amBulletproof/OS_P2)
 
